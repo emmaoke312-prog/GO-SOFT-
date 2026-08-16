@@ -618,3 +618,35 @@ export default function App() {
           audio: false,
         });
        
+        if (cancelled) return;
+        streamRef.current = stream;
+        if (videoRef.current) videoRef.current.srcObject = stream;
+      } catch (err) {
+        if (cancelled) return;
+        setCameraError(err.message || "Could not access camera");
+      }
+    })();
+    return () => {
+      cancelled = true;
+      stopCameraStream();
+    };
+  }, [tab]);
+
+  if (showSplash) return <SplashScreen />;
+  if (!authChecked) return <div style={{ background: COLORS.bgApp, height: "100vh" }} />;
+  if (!user) return <AuthScreen signingIn={signingIn} onSignIn={handleSignIn} />;
+
+  return (
+    <>
+      <FontStyle />
+      <div className="font-body" style={{ display: "flex", flexDirection: "column", height: "100vh", maxWidth: 480, margin: "0 auto", background: COLORS.bgApp, color: COLORS.textPrimary }}>
+        {tab === "home" && <HomeTab onToolSelect={startConversation} onNewChat={startNewChat} />}
+        {tab === "chat" && <ChatTab conversation={conversations[currentId]} loading={loading} input={input} onInputChange={setInput} onSend={() => sendMessage()} onBack={() => setTab("home")} onOpenCamera={() => setTab("camera")} />}
+        {tab === "settings" && <SettingsTab user={user} profileName={profileName} editingName={editingName} nameDraft={nameDraft} theme={theme} onToggleTheme={toggleTheme} onEditName={() => { setEditingName(true); setNameDraft(profileName); }} onSaveName={() => { setProfileName(nameDraft); setEditingName(false); try { localStorage.setItem("go-soft-name", nameDraft); } catch (e) {} }} onCancelEdit={() => setEditingName(false)} onNameChange={setNameDraft} onSignOut={handleSignOut} onBack={() => setTab("home")} />}
+        {tab === "camera" && <CameraTab videoRef={videoRef} cameraError={cameraError} onClose={closeCamera} onCapture={handleCapturedPhoto} fileInputRef={fileInputRef} />}
+        {tab !== "camera" && <BottomNav tab={tab} onTabChange={handleTabChange} conversationsCount={order.length} />}
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleCapturedPhoto} />
+      </div>
+    </>
+  );
+}
